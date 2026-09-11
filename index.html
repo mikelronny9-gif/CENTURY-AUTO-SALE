@@ -42,6 +42,10 @@
     <span>© 2026 Century Auto Sales. All rights reserved.</span>
     <a href="tel:+17039885895">+1 (703) 988-5895</a>
   </div>
+
+<div class="admin-login-wrap">
+  <a class="admin-login-btn" href="admin.html">Dealer Admin Login</a>
+</div>
 </footer>
 
 <nav class="mobile-bottom-nav" aria-label="Mobile navigation">
@@ -54,14 +58,114 @@
 <div id="modal" class="modal hidden"><div class="card"><button class="x" onclick="closeRequest()">×</button><h2>Request to Chat</h2><p>Your request goes directly to our Century Auto Sales Admin Board.</p><form id="form"><input id="name" placeholder="Your name" required><input id="email" type="email" placeholder="Email" required><input id="phone" placeholder="Phone"><input id="vehicle" placeholder="Vehicle interested in"><textarea id="message" placeholder="How can we help?" required></textarea><button class="primary">Send Request</button></form><p id="status"></p></div></div>
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
-import {getFirestore,collection,addDoc,serverTimestamp} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+import {getAuth,signInAnonymously,onAuthStateChanged} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+import {getFirestore,collection,addDoc,doc,onSnapshot,serverTimestamp,arrayUnion,updateDoc} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 import {firebaseConfig} from "./firebase-config.js";
-const db=getFirestore(initializeApp(firebaseConfig));
-document.getElementById("form").onsubmit=async e=>{e.preventDefault();status.textContent="Sending...";
-try{await addDoc(collection(db,"chatRequests"),{name:name.value,email:email.value,phone:phone.value,vehicle:vehicle.value,message:message.value,status:"open",createdAt:serverTimestamp(),updatedAt:serverTimestamp()});status.textContent="Request sent! Our team will contact you.";e.target.reset();}catch(err){console.error(err);status.textContent="Could not send. Please try again.";}}
-window.openRequest=()=>modal.classList.remove("hidden");window.closeRequest=()=>modal.classList.add("hidden");
-document.getElementById("live").onclick=()=>{if(typeof smartsupp==="function")smartsupp("chat:open");};
+
+const app=initializeApp(firebaseConfig);
+const auth=getAuth(app);
+const db=getFirestore(app);
+
+let customerUid=null;
+let currentRequestId=localStorage.getItem("centuryRequestId")||null;
+
+onAuthStateChanged(auth,u=>{
+  customerUid=u?.uid||null;
+});
+signInAnonymously(auth).catch(err=>console.error("Anonymous sign-in:",err));
+
+const cars=[
+  ["2023 Toyota RAV4","$28,995"],["2022 Honda Accord","$24,995"],
+  ["2023 Ford F-150","$36,995"],["2021 BMW 330i","$32,995"],
+  ["2022 Chevrolet Camaro","$27,995"],["2023 Jeep Grand Cherokee","$34,995"]
+];
+document.getElementById("cars").innerHTML=cars.map(c=>`<article><div class="photo">${c[0]}</div><h3>${c[0]}</h3><b>${c[1]}</b><br><button class="secondary" onclick="openRequest('${c[0]}')">Request to Chat</button></article>`).join("");
+
+const modal=document.getElementById("modal"), form=document.getElementById("form"), statusEl=document.getElementById("status");
+
+window.openRequest=(vehicle="")=>{
+  modal.classList.remove("hidden");
+  if(vehicle) document.getElementById("vehicle").value=vehicle;
+};
+window.closeRequest=()=>modal.classList.add("hidden");
+
+form.onsubmit=async e=>{
+  e.preventDefault();
+  if(!customerUid){statusEl.textContent="Connecting securely. Please try again in a moment.";return;}
+  statusEl.textContent="Sending...";
+  try{
+    const initialMessage=message.value.trim();
+    const ref=await addDoc(collection(db,"chatRequests"),{
+      name:name.value.trim(), email:email.value.trim(), phone:phone.value.trim(),
+      vehicle:vehicle.value.trim(), message:initialMessage, status:"open",
+      customerUid, createdAt:serverTimestamp(), updatedAt:serverTimestamp(),
+      messages:[{sender:"customer",text:initialMessage,createdAt:new Date().toISOString()}]
+    });
+    currentRequestId=ref.id;
+    localStorage.setItem("centuryRequestId",currentRequestId);
+    statusEl.textContent="Request sent! You can chat with Century Auto Sales below.";
+    form.reset();
+    setTimeout(()=>{closeRequest();openCustomerChat();},700);
+  }catch(err){
+    console.error(err); statusEl.textContent="Could not send your request. Please try again.";
+  }
+};
+
+function renderMessages(messages=[]){
+  const box=document.getElementById("customerMessages");
+  box.innerHTML=messages.map(m=>`<div class="msg ${m.sender==="customer"?"mine":"agent"}"><b>${m.sender==="customer"?"You":"Century Auto Sales"}</b><p>${safe(m.text)}</p></div>`).join("");
+  box.scrollTop=box.scrollHeight;
+}
+
+function subscribeCustomer(){
+  if(!currentRequestId||!customerUid)return;
+  onSnapshot(doc(db,"chatRequests",currentRequestId),snap=>{
+    if(!snap.exists())return;
+    const data=snap.data();
+    if(data.customerUid!==customerUid)return;
+    renderMessages(data.messages||[{sender:"customer",text:data.message}]);
+    document.getElementById("customerChat").classList.remove("hidden");
+  },err=>console.error("Chat listener:",err));
+}
+window.openCustomerChat=()=>{
+  document.getElementById("customerChat").classList.remove("hidden");
+  subscribeCustomer();
+};
+window.closeCustomerChat=()=>document.getElementById("customerChat").classList.add("hidden");
+
+document.getElementById("customerReplyForm").onsubmit=async e=>{
+  e.preventDefault();
+  const input=document.getElementById("customerReply"), text=input.value.trim();
+  if(!text||!currentRequestId)return;
+  try{
+    await updateDoc(doc(db,"chatRequests",currentRequestId),{
+      messages:arrayUnion({sender:"customer",text,createdAt:new Date().toISOString()}),
+      updatedAt:serverTimestamp(),status:"open"
+    });
+    input.value="";
+  }catch(err){console.error(err);}
+};
+
+function safe(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));}
+
+document.getElementById("live").onclick=()=>{
+  if(typeof smartsupp==="function")smartsupp("chat:open");
+};
+
+setTimeout(()=>{if(currentRequestId)openCustomerChat();},1200);
 </script>
+
+<div id="customerChat" class="customer-chat hidden" aria-live="polite">
+  <div class="customer-chat-head">
+    <div><strong>Century Auto Sales</strong><small>Request Chat</small></div>
+    <button onclick="closeCustomerChat()" aria-label="Close chat">×</button>
+  </div>
+  <div id="customerMessages" class="messages"></div>
+  <form id="customerReplyForm">
+    <input id="customerReply" placeholder="Type your message..." autocomplete="off">
+    <button type="submit">Send</button>
+  </form>
+</div>
 <script>var _smartsupp=_smartsupp||{};_smartsupp.key='411f2a4bf47dd1444d0897e16d5495ad123e251d';window.smartsupp||(function(d){var s,c,o=smartsupp=function(){o._.push(arguments)};o._=[];s=d.getElementsByTagName('script')[0];c=d.createElement('script');c.type='text/javascript';c.charset='utf-8';c.async=true;c.src='https://www.smartsuppchat.com/loader.js?';s.parentNode.insertBefore(c,s)})(document);</script>
 <script>
 const cars=[["2023 Toyota RAV4","$28,995"],["2022 Honda Accord","$24,995"],["2023 Ford F-150","$36,995"],["2021 BMW 330i","$32,995"],["2022 Chevrolet Camaro","$27,995"],["2023 Jeep Grand Cherokee","$34,995"]];

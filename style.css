@@ -37,3 +37,19 @@
   .faq-grid{grid-template-columns:1fr}
   .intro-section h2{font-size:31px}
 }
+
+.admin-login-wrap{text-align:center;margin-top:24px}
+.admin-login-btn{display:inline-block;padding:12px 20px;border-radius:8px;background:#fff;color:#111827;font-weight:800;text-decoration:none;border:1px solid #d9dee4}
+.admin-login-btn:hover{opacity:.9}
+
+.admin-tools{display:flex;justify-content:flex-end;margin:0 0 12px}
+.admin-tools button{font-weight:800}
+.customer-chat{position:fixed;right:20px;bottom:20px;width:min(390px,calc(100vw - 30px));background:#fff;border:1px solid #d7dde3;border-radius:14px;box-shadow:0 15px 45px #0003;z-index:50;overflow:hidden}
+.customer-chat-head{background:#111827;color:#fff;padding:14px 16px;display:flex;justify-content:space-between;align-items:center}
+.customer-chat-head div{display:flex;flex-direction:column;gap:2px}.customer-chat-head small{opacity:.7}
+.customer-chat-head button{background:none;color:#fff;font-size:24px;padding:0}
+.customer-chat .messages{height:280px;margin:0;border-radius:0}
+.customer-chat form{display:flex;gap:8px;padding:10px;background:#fff}
+.customer-chat input{flex:1;padding:12px;border:1px solid #ccd3da;border-radius:8px}
+.customer-chat form button{border:0;border-radius:8px;padding:11px 15px;background:#111827;color:#fff;font-weight:700}
+.conv-head{display:flex;justify-content:space-between;gap:15px;align-items:start}

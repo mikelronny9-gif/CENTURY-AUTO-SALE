@@ -1,15 +1,119 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Century Auto Sales Admin</title><link rel="stylesheet" href="style.css"></head><body class="admin"><div id="login" class="login"><h1>Century Auto Sales</h1><h2>Dealer Admin</h2><form id="loginForm"><input id="email" type="email" placeholder="Admin email" required><input id="password" type="password" placeholder="Password" required><button class="primary">Sign In</button></form><p id="loginError"></p></div><div id="dash" class="hidden"><header><b>Century Auto Sales — Admin</b><button id="logout">Log Out</button></header><main><div class="stats"><div><b id="openCount">0</b><small>Open Requests</small></div><div><b id="totalCount">0</b><small>Total Requests</small></div></div><h2>Request to Chat</h2><p>Customer requests from the website appear here. This is separate from Smartsupp Live Chat.</p><div id="requests"></div><div id="conversation"></div></main></div>
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Century Auto Sales Admin</title><link rel="stylesheet" href="style.css"></head><body class="admin"><div id="login" class="login"><h1>Century Auto Sales</h1><h2>Dealer Admin</h2><form id="loginForm"><input id="email" type="email" placeholder="Admin email" required><input id="password" type="password" placeholder="Password" required><button class="primary">Sign In</button></form><p id="loginError"></p></div><div id="dash" class="hidden"><header><b>Century Auto Sales — Admin</b><button id="logout">Log Out</button></header><main><div class="admin-tools"><button id="enableNotifications" class="secondary">🔔 Enable Notifications</button></div><div class="stats"><div><b id="openCount">0</b><small>Open Requests</small></div><div><b id="totalCount">0</b><small>Total Requests</small></div></div><h2>Request to Chat</h2><p>Customer requests from the website appear here. This is separate from Smartsupp Live Chat.</p><div id="requests"></div><div id="conversation"></div></main></div>
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
 import {getAuth,signInWithEmailAndPassword,onAuthStateChanged,signOut} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
-import {getFirestore,collection,query,orderBy,getDocs,doc,getDoc,updateDoc,arrayUnion,serverTimestamp} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+import {getFirestore,collection,query,orderBy,onSnapshot,doc,updateDoc,arrayUnion,serverTimestamp,getDoc} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 import {firebaseConfig} from "./firebase-config.js";
+
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app);
-loginForm.onsubmit=async e=>{e.preventDefault();try{await signInWithEmailAndPassword(auth,email.value,password.value);loginError.textContent=""}catch(x){loginError.textContent="Login failed. Check Firebase Authentication."}};
-onAuthStateChanged(auth,u=>{if(u){login.classList.add("hidden");dash.classList.remove("hidden");load()}else{dash.classList.add("hidden");login.classList.remove("hidden")}});
-logout.onclick=()=>signOut(auth);
-async function load(){try{const s=await getDocs(query(collection(db,"chatRequests"),orderBy("createdAt","desc")));const a=s.docs.map(d=>({id:d.id,...d.data()}));openCount.textContent=a.filter(x=>x.status==="open").length;totalCount.textContent=a.length;requests.innerHTML=a.length?a.map(x=>`<article class="request" data-id="${x.id}"><b>${safe(x.name)}</b><span>${x.status}</span><p>${safe(x.vehicle||"General inquiry")}</p><p>${safe(x.message)}</p><small>${x.createdAt?.toDate?x.createdAt.toDate().toLocaleString():"New"}</small></article>`).join(""):"<p>No requests yet.</p>";document.querySelectorAll(".request").forEach(x=>x.onclick=()=>open(x.dataset.id))}catch(e){requests.innerHTML="<p>Could not load requests. Check Firestore rules.</p>"}}
-async function open(id){const s=await getDoc(doc(db,"chatRequests",id));if(!s.exists())return;const x={id:s.id,...s.data()};conversation.innerHTML=`<div class="conv"><h2>${safe(x.name)}</h2><p>${safe(x.email)} ${x.phone?"• "+safe(x.phone):""}</p><p><b>Vehicle:</b> ${safe(x.vehicle||"Not specified")}</p><div id="msgs" class="messages">${(x.messages||[{sender:"customer",text:x.message}]).map(m=>`<div class="msg ${m.sender==="agent"?"agent":""}"><b>${m.sender==="agent"?"You":"Customer"}</b><p>${safe(m.text)}</p></div>`).join("")}</div><form id="reply"><input id="replyText" placeholder="Reply to customer..." required><button class="primary">Reply</button></form><button id="close" class="secondary">Close Request</button></div>`;reply.onsubmit=async e=>{e.preventDefault();const text=replyText.value.trim();if(!text)return;await updateDoc(doc(db,"chatRequests",id),{messages:arrayUnion({sender:"agent",text,createdAt:new Date().toISOString()}),updatedAt:serverTimestamp()});replyText.value="";open(id)};close.onclick=async()=>{await updateDoc(doc(db,"chatRequests",id),{status:"closed",updatedAt:serverTimestamp()});conversation.innerHTML="";load()}}
-function safe(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",""":"&quot;","'":"&#39;"}[c]))}
-setInterval(()=>{if(auth.currentUser)load()},5000);
+let unsubscribe=null,activeRequest=null,knownIds=new Set(),firstSnapshot=true;
+let notificationPermission=false;
+
+const login=document.getElementById("login"),dash=document.getElementById("dash"),requests=document.getElementById("requests");
+const conversation=document.getElementById("conversation"),openCount=document.getElementById("openCount"),totalCount=document.getElementById("totalCount");
+
+loginForm.onsubmit=async e=>{
+  e.preventDefault();
+  try{
+    await signInWithEmailAndPassword(auth,email.value,password.value);
+    loginError.textContent="";
+  }catch(x){loginError.textContent="Login failed. Check your Firebase Authentication admin account.";}
+};
+
+onAuthStateChanged(auth,u=>{
+  if(u){
+    login.classList.add("hidden");dash.classList.remove("hidden");
+    setupNotifications();
+    subscribeRequests();
+  }else{
+    if(unsubscribe)unsubscribe();
+    dash.classList.add("hidden");login.classList.remove("hidden");
+  }
+});
+
+document.getElementById("logout").onclick=()=>signOut(auth);
+
+async function setupNotifications(){
+  const btn=document.getElementById("enableNotifications");
+  if(!("Notification" in window)){btn.textContent="Notifications unavailable";btn.disabled=true;return;}
+  if(Notification.permission==="granted"){notificationPermission=true;btn.textContent="🔔 Notifications On";return;}
+  btn.onclick=async()=>{
+    const p=await Notification.requestPermission();
+    notificationPermission=p==="granted";
+    btn.textContent=notificationPermission?"🔔 Notifications On":"🔕 Notifications Off";
+  };
+}
+
+function playAlert(){
+  try{
+    const ctx=new (window.AudioContext||window.webkitAudioContext)();
+    const osc=ctx.createOscillator(),gain=ctx.createGain();
+    osc.frequency.value=880;gain.gain.value=.06;
+    osc.connect(gain);gain.connect(ctx.destination);osc.start();
+    setTimeout(()=>{osc.frequency.value=660},130);
+    setTimeout(()=>{osc.stop();ctx.close()},260);
+  }catch{}
+}
+function notify(title,body){
+  playAlert();
+  if(notificationPermission)new Notification(title,{body});
+  document.title="🔴 New Request — Century Auto Sales";
+  setTimeout(()=>{document.title="Century Auto Sales — Admin"},4000);
+}
+
+function subscribeRequests(){
+  if(unsubscribe)unsubscribe();
+  const q=query(collection(db,"chatRequests"),orderBy("createdAt","desc"));
+  unsubscribe=onSnapshot(q,snap=>{
+    const list=snap.docs.map(d=>({id:d.id,...d.data()}));
+    openCount.textContent=list.filter(x=>x.status==="open").length;
+    totalCount.textContent=list.length;
+    const newItems=list.filter(x=>!knownIds.has(x.id));
+    if(!firstSnapshot)newItems.forEach(x=>notify("New Request to Chat",`${x.name} requested a chat${x.vehicle?" about "+x.vehicle:""}.`));
+    snap.docs.forEach(d=>knownIds.add(d.id));
+    firstSnapshot=false;
+    renderRequests(list);
+    if(activeRequest)refreshConversation(activeRequest);
+  },err=>{
+    console.error(err);
+    requests.innerHTML="<p>Could not load requests. Check Firestore rules.</p>";
+  });
+}
+
+function renderRequests(list){
+  requests.innerHTML=list.length?list.map(x=>`<article class="request ${activeRequest===x.id?"selected":""}" data-id="${x.id}">
+    <b>${safe(x.name)}</b><span>${x.status}</span>
+    <p>${safe(x.vehicle||"General inquiry")}</p><p>${safe(x.message)}</p>
+    <small>${x.createdAt?.toDate?x.createdAt.toDate().toLocaleString():"New"}</small>
+  </article>`).join(""):"<p>No requests yet.</p>";
+  document.querySelectorAll(".request").forEach(x=>x.onclick=()=>openRequest(x.dataset.id));
+}
+
+async function openRequest(id){activeRequest=id;await refreshConversation(id);}
+
+async function refreshConversation(id){
+  const s=await getDoc(doc(db,"chatRequests",id));if(!s.exists())return;
+  const x={id:s.id,...s.data()};
+  conversation.innerHTML=`<div class="conv">
+    <div class="conv-head"><div><h2>${safe(x.name)}</h2><p>${safe(x.email)} ${x.phone?"• "+safe(x.phone):""}</p></div>
+      <button id="closeRequestBtn" class="secondary">Close Request</button></div>
+    <p><b>Vehicle:</b> ${safe(x.vehicle||"Not specified")}</p>
+    <div class="messages" id="adminMessages">${(x.messages||[{sender:"customer",text:x.message}]).map(m=>`<div class="msg ${m.sender==="agent"?"agent":""}"><b>${m.sender==="agent"?"You":"Customer"}</b><p>${safe(m.text)}</p></div>`).join("")}</div>
+    <form id="reply"><input id="replyText" placeholder="Reply to customer..." required><button class="primary">Reply</button></form>
+  </div>`;
+  const box=document.getElementById("adminMessages");box.scrollTop=box.scrollHeight;
+  document.getElementById("reply").onsubmit=async e=>{
+    e.preventDefault();const text=replyText.value.trim();if(!text)return;
+    await updateDoc(doc(db,"chatRequests",id),{
+      messages:arrayUnion({sender:"agent",text,createdAt:new Date().toISOString()}),
+      updatedAt:serverTimestamp(),status:"open"
+    });replyText.value="";
+  };
+  document.getElementById("closeRequestBtn").onclick=async()=>{
+    await updateDoc(doc(db,"chatRequests",id),{status:"closed",updatedAt:serverTimestamp()});
+    activeRequest=null;conversation.innerHTML="";renderRequests([...knownIds].map(()=>null).filter(Boolean));
+  };
+}
+
+function safe(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));}
 </script></body></html>
