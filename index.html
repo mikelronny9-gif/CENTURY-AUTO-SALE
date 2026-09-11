@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Century Auto Sales | Quality Cars</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><span class="brand-mark">D</span><span>Century Auto Sales <b>Motors</b></span></div>
+  <nav>
+    <a href="#inventory">Inventory</a><a href="#financing">Financing</a><a href="#contact">Contact</a>
+    <button class="outline" onclick="openChat()">Live Chat</button>
+  </nav>
+</header>
+
+<section class="hero">
+  <div>
+    <p class="eyebrow">QUALITY PRE-OWNED VEHICLES</p>
+    <h1>Find a car you’ll<br><span>love to drive.</span></h1>
+    <p class="hero-copy">Browse our inventory, ask questions, request a callback, or chat with a dealer representative.</p>
+    <div class="hero-actions"><a class="btn" href="#inventory">Browse Inventory</a><button class="btn dark" onclick="openRequest()">Request to Chat</button></div>
+  </div>
+</section>
+
+<section class="searchbar">
+  <input id="search" placeholder="Search make or model..." oninput="renderCars()">
+  <select id="body" onchange="renderCars()"><option value="">All body styles</option><option>SUV</option><option>Sedan</option><option>Truck</option><option>Coupe</option></select>
+  <select id="price" onchange="renderCars()"><option value="">Any price</option><option value="25000">Under $25,000</option><option value="35000">Under $35,000</option><option value="50000">Under $50,000</option></select>
+</section>
+
+<main>
+<section id="inventory" class="section">
+  <div class="section-head"><div><p class="eyebrow">OUR INVENTORY</p><h2>Featured vehicles</h2></div><span id="count" class="muted"></span></div>
+  <div id="cars" class="grid"></div>
+</section>
+
+<section id="financing" class="split-section">
+  <div><p class="eyebrow">FINANCING</p><h2>Make your next car affordable.</h2><p>Send a quick financing request and a dealer representative can follow up with available options.</p><button class="btn" onclick="openFinance()">Start Financing Request</button></div>
+  <div class="finance-card"><strong>✓ Flexible options</strong><strong>✓ Fast response</strong><strong>✓ No-pressure assistance</strong></div>
+</section>
+
+<section id="contact" class="contact-section">
+  <div><p class="eyebrow">CONTACT THE DEALER</p><h2>Have a question?</h2><p>Call, email, or request a chat. If we're offline, leave your details and we'll get back to you.</p></div>
+  <div class="contact-card"><div><small>PHONE</small><b>+1 (703) 988-5895</b></div><div><small>EMAIL</small><b>francescalucia021@gmail.com</b></div><button class="btn dark" onclick="openRequest()">Request a Callback</button></div>
+</section>
+</main>
+
+<footer><div>© 2026 Century Auto Sales</div><a href="admin.html">Dealer Admin</a></footer>
+
+<div id="chatWidget" class="chat-widget hidden">
+  <div class="chat-head"><b>Dealer Chat</b><button onclick="closeChat()">×</button></div>
+  <div id="chatMessages" class="chat-messages"><div class="msg dealer">Hi! How can we help you today?</div></div>
+  <div class="chat-status">● Dealer chat is available</div>
+  <div class="chat-input"><input id="chatText" placeholder="Type your message..." onkeydown="if(event.key==='Enter')sendChat()"><button onclick="sendChat()">Send</button></div>
+</div>
+
+<div id="modal" class="modal hidden"><div class="modal-box"><button class="close" onclick="closeModal()">×</button><h2 id="modalTitle">Request to Chat</h2><p id="modalIntro">Leave your contact information and a dealer will reach out.</p><form id="leadForm" onsubmit="submitLead(event)">
+<input name="name" required placeholder="Full name"><input name="email" type="email" required placeholder="Email address"><input name="phone" placeholder="Phone number"><input name="vehicle" id="vehicleField" placeholder="Vehicle you're interested in"><textarea name="message" placeholder="How can we help?"></textarea><button class="btn" type="submit">Send Request</button></form></div></div>
+
+<script src="app.js"></script>
+</body>
+</html>
