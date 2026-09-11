@@ -1,25 +1,14 @@
-# Century Auto Sales — Dealer Website
+# Century Auto Sales — GitHub + Firebase + Smartsupp
 
-## Included
-- Public dealer inventory website
-- Vehicle search/filtering
-- Vehicle inquiry / Request to Chat form
-- Live-chat interface
-- Offline request collection
-- Financing request
-- Dealer admin login
-- Admin dashboard showing customer requests
-- Inventory add/delete controls
+Request to Chat is stored in Firebase Firestore and appears in admin.html.
+Live Chat is separate and uses Smartsupp.
 
-## Demo admin
-Email: yomawisdom55@gmail.com
-Password: mamaboy12
+Before using the admin board:
+1. Firebase Console -> Authentication -> Sign-in method -> enable Email/Password.
+2. Create the admin user with the dealer admin email/password.
+3. Firestore -> Rules -> paste firestore.rules and Publish.
+4. Upload these files to GitHub Pages.
 
-## Important
-This version is a front-end prototype. Customer requests are stored in the browser's localStorage, so they are not actually emailed to an administrator and the login is not secure for production.
+Do not put an admin password in GitHub. The Firebase web configuration is included in firebase-config.js.
 
-For a real dealership deployment, connect the forms and authentication to a backend/database and store the admin password as a secure server-side environment variable. The email can then be wired to an SMTP/email service.
-
-
-## Live Chat
-The website uses Smartsupp for real live chat. The Smartsupp widget is loaded directly on the public site using the provided account key. Dealer replies are handled through the Smartsupp dashboard/app, not the local admin panel.
+The homepage also includes a mobile-friendly bottom navigation and expanded dark footer inspired by the provided reference design.

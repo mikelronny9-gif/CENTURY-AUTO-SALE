@@ -1,0 +1,13 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /chatRequests/{id} {
+      allow create: if request.resource.data.name is string
+        && request.resource.data.email is string
+        && request.resource.data.message is string
+        && request.resource.data.status == "open";
+      allow read, update, delete: if request.auth != null
+        && request.auth.token.email == "yomawisdom55@gmail.com";
+    }
+  }
+}
