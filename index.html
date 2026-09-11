@@ -51,7 +51,7 @@
 
 <div id="chatWidget" class="chat-widget hidden">
   <div class="chat-head"><b>Dealer Chat</b><button onclick="closeChat()">×</button></div>
-  <div id="chatMessages" class="chat-messages"><div class="msg dealer">Hi! How can we help you today?</div></div>
+  <div id="chatMessages" class="chat-messages"></div>
   <div class="chat-status">● Dealer chat is available</div>
   <div class="chat-input"><input id="chatText" placeholder="Type your message..." onkeydown="if(event.key==='Enter')sendChat()"><button onclick="sendChat()">Send</button></div>
 </div>
@@ -60,5 +60,17 @@
 <input name="name" required placeholder="Full name"><input name="email" type="email" required placeholder="Email address"><input name="phone" placeholder="Phone number"><input name="vehicle" id="vehicleField" placeholder="Vehicle you're interested in"><textarea name="message" placeholder="How can we help?"></textarea><button class="btn" type="submit">Send Request</button></form></div></div>
 
 <script src="app.js"></script>
+<!-- Smartsupp Live Chat -->
+<script type="text/javascript">
+var _smartsupp = _smartsupp || {};
+_smartsupp.key = '411f2a4bf47dd1444d0897e16d5495ad123e251d';
+window.smartsupp||(function(d) {
+	var s,c,o=smartsupp=function(){ o._.push(arguments)};o._=[];
+	s=d.getElementsByTagName('script')[0];c=d.createElement('script');
+	c.type='text/javascript';c.charset='utf-8';c.async=true;
+	c.src='https://www.smartsuppchat.com/loader.js?';s.parentNode.insertBefore(c,s);
+})(document);
+</script>
+
 </body>
 </html>

@@ -19,3 +19,7 @@ Password: mamaboy12
 This version is a front-end prototype. Customer requests are stored in the browser's localStorage, so they are not actually emailed to an administrator and the login is not secure for production.
 
 For a real dealership deployment, connect the forms and authentication to a backend/database and store the admin password as a secure server-side environment variable. The email can then be wired to an SMTP/email service.
+
+
+## Live Chat
+The website uses Smartsupp for real live chat. The Smartsupp widget is loaded directly on the public site using the provided account key. Dealer replies are handled through the Smartsupp dashboard/app, not the local admin panel.
