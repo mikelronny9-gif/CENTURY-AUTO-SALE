@@ -27,3 +27,7 @@ Enable BOTH:
 2. Anonymous (for website visitors who use Request to Chat).
 
 The included `firestore.rules` uses the anonymous user's Firebase UID to protect customer requests.
+
+
+## Featured Inventory Photos
+The featured vehicle cards now display vehicle photos instead of text-only placeholders.

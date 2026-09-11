@@ -168,6 +168,20 @@ setTimeout(()=>{if(currentRequestId)openCustomerChat();},1200);
 </div>
 <script>var _smartsupp=_smartsupp||{};_smartsupp.key='411f2a4bf47dd1444d0897e16d5495ad123e251d';window.smartsupp||(function(d){var s,c,o=smartsupp=function(){o._.push(arguments)};o._=[];s=d.getElementsByTagName('script')[0];c=d.createElement('script');c.type='text/javascript';c.charset='utf-8';c.async=true;c.src='https://www.smartsuppchat.com/loader.js?';s.parentNode.insertBefore(c,s)})(document);</script>
 <script>
-const cars=[["2023 Toyota RAV4","$28,995"],["2022 Honda Accord","$24,995"],["2023 Ford F-150","$36,995"],["2021 BMW 330i","$32,995"],["2022 Chevrolet Camaro","$27,995"],["2023 Jeep Grand Cherokee","$34,995"]];
-document.getElementById("cars").innerHTML=cars.map(c=>`<article><div class="photo">${c[0]}</div><h3>${c[0]}</h3><b>${c[1]}</b><br><button class="secondary" onclick="openRequest()">Request to Chat</button></article>`).join("");
+const cars=[
+  ["2023 Toyota RAV4","$28,995","https://di-uploads-pod27.dealerinspire.com/saffordhyundaiofspringfield/uploads/2023/05/rav-1024x768.jpg"],
+  ["2022 Honda Accord","$24,995","https://automobiles.honda.com/-/media/Honda-Automobiles/Vehicles/2022/Accord-Sedan/AW/Carshot/carshot_AccordSedan_front_ACCORD15TLX_2022_PlatinumWhitePearl_CV1F1NEW_NH-883P.png"],
+  ["2023 Ford F-150","$36,995","https://fastly.clutch.ca/stc-photos/2e7d9996-8648-4b98-b634-41420a20c936.png?class=medium"],
+  ["2021 BMW 330i","$32,995","https://pictures.dealer.com/b/butlerautodirect/0446/2721f24551f6cdd6eca9453e9d6ed470x.jpg?impolicy=resize&w=1024"],
+  ["2022 Chevrolet Camaro","$27,995","https://static.overfuel.com/photos/506/559862/image-1.webp?q=80&w=1920"],
+  ["2023 Jeep Grand Cherokee","$34,995","https://www.marinadodgeny.com/wp-content/uploads/2022/12/2023-Jeep-Grand-Cherokee.jpeg"]
+];
+document.getElementById("cars").innerHTML=cars.map(c=>`<article class="vehicle-card">
+  <img class="vehicle-image" src="${c[2]}" alt="${c[0]}" loading="lazy">
+  <div class="vehicle-info">
+    <h3>${c[0]}</h3>
+    <div class="vehicle-price">${c[1]}</div>
+    <button class="secondary" onclick="openRequest()">Request to Chat</button>
+  </div>
+</article>`).join("");
 </script></body></html>
