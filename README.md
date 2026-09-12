@@ -31,3 +31,6 @@ The included `firestore.rules` uses the anonymous user's Firebase UID to protect
 
 ## Featured Inventory Photos
 The featured vehicle cards now display vehicle photos instead of text-only placeholders.
+
+### Inventory image files
+The six Featured Inventory photos are bundled locally in the `images/` folder, so the vehicle pictures do not depend on external image URLs.
