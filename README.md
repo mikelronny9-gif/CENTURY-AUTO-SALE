@@ -1,36 +1,11 @@
-# Century Auto Sales — GitHub + Firebase + Smartsupp
+# Century Auto Sales — Final
 
-Request to Chat is stored in Firebase Firestore and appears in admin.html.
-Live Chat is separate and uses Smartsupp.
+Upload ALL files in this folder to the ROOT of the GitHub Pages repository. Do not put the JPG files in a subfolder.
 
-Before using the admin board:
-1. Firebase Console -> Authentication -> Sign-in method -> enable Email/Password.
-2. Create the admin user with the dealer admin email/password.
-3. Firestore -> Rules -> paste firestore.rules and Publish.
-4. Upload these files to GitHub Pages.
+Featured Inventory images are local files: rav4.jpg, accord.jpg, f150.jpg, bmw330i.jpg, camaro.jpg, grand-cherokee.jpg.
 
-Do not put an admin password in GitHub. The Firebase web configuration is included in firebase-config.js.
+Request to Chat uses Firebase Anonymous Authentication + Firestore. Live Chat remains Smartsupp and is separate.
 
-The homepage also includes a mobile-friendly bottom navigation and expanded dark footer inspired by the provided reference design.
+Firebase Authentication must have Anonymous enabled. Email/Password is used for Dealer Admin. Publish firestore.rules in Firebase Console.
 
-
-## Notifications + customer chat
-- Admin board listens to Firestore in real time.
-- New Request to Chat triggers an in-page badge count, sound, and optional browser notification.
-- Click **Enable Notifications** in the admin board once.
-- Customers get a Request Chat box after submitting and can continue messaging.
-- Admin replies appear in the customer chat box in real time.
-
-### Firebase Authentication requirement
-Enable BOTH:
-1. Email/Password (for the dealer admin).
-2. Anonymous (for website visitors who use Request to Chat).
-
-The included `firestore.rules` uses the anonymous user's Firebase UID to protect customer requests.
-
-
-## Featured Inventory Photos
-The featured vehicle cards now display vehicle photos instead of text-only placeholders.
-
-### Inventory image files
-The six Featured Inventory photos are bundled locally in the `images/` folder, so the vehicle pictures do not depend on external image URLs.
+Security: no admin password is stored in this website.

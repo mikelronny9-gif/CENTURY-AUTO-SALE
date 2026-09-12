@@ -68,11 +68,26 @@ const db=getFirestore(app);
 
 let customerUid=null;
 let currentRequestId=localStorage.getItem("centuryRequestId")||null;
+let authReady=null;
 
-onAuthStateChanged(auth,u=>{
-  customerUid=u?.uid||null;
+const nameEl=document.getElementById("name");
+const emailEl=document.getElementById("email");
+const phoneEl=document.getElementById("phone");
+const vehicleEl=document.getElementById("vehicle");
+const messageEl=document.getElementById("message");
+
+authReady=new Promise(resolve=>{
+  onAuthStateChanged(auth,u=>{
+    customerUid=u?.uid||null;
+    if(u) resolve(u);
+  });
 });
-signInAnonymously(auth).catch(err=>console.error("Anonymous sign-in:",err));
+
+// Sign customers in anonymously so Request to Chat works without an account.
+signInAnonymously(auth).catch(err=>{
+  console.error("Anonymous sign-in failed:",err);
+  statusEl.textContent="Customer connection failed: "+(err.code||err.message);
+});
 
 const modal=document.getElementById("modal"), form=document.getElementById("form"), statusEl=document.getElementById("status");
 
@@ -84,14 +99,21 @@ window.closeRequest=()=>modal.classList.add("hidden");
 
 form.onsubmit=async e=>{
   e.preventDefault();
-  if(!customerUid){statusEl.textContent="Connecting securely. Please try again in a moment.";return;}
-  statusEl.textContent="Sending...";
+  statusEl.textContent="Connecting securely...";
   try{
-    const initialMessage=message.value.trim();
+    const user=customerUid ? auth.currentUser : await Promise.race([
+      authReady,
+      new Promise((_,reject)=>setTimeout(()=>reject(new Error("Customer sign-in timed out")),10000))
+    ]);
+    if(!user) throw new Error("Customer authentication unavailable");
+    customerUid=user.uid;
+    const initialMessage=messageEl.value.trim();
+    if(!initialMessage) throw new Error("Please enter a message");
+    statusEl.textContent="Sending...";
     const ref=await addDoc(collection(db,"chatRequests"),{
-      name:name.value.trim(), email:email.value.trim(), phone:phone.value.trim(),
-      vehicle:vehicle.value.trim(), message:initialMessage, status:"open",
-      customerUid, createdAt:serverTimestamp(), updatedAt:serverTimestamp(),
+      name:nameEl.value.trim(), email:emailEl.value.trim(), phone:phoneEl.value.trim(),
+      vehicle:vehicleEl.value.trim(), message:initialMessage, status:"open",
+      customerUid:customerUid, createdAt:serverTimestamp(), updatedAt:serverTimestamp(),
       messages:[{sender:"customer",text:initialMessage,createdAt:new Date().toISOString()}]
     });
     currentRequestId=ref.id;
@@ -100,7 +122,14 @@ form.onsubmit=async e=>{
     form.reset();
     setTimeout(()=>{closeRequest();openCustomerChat();},700);
   }catch(err){
-    console.error(err); statusEl.textContent="Could not send your request. Please try again.";
+    console.error("Request to Chat error:",err);
+    const code=err?.code||"";
+    let msg="Could not send your request.";
+    if(code.includes("permission-denied")) msg="Could not send: Firestore permission denied. Please publish the firestore.rules file.";
+    else if(code.includes("failed-precondition")) msg="Could not send: Firestore database is not ready.";
+    else if(code.includes("network")) msg="Could not send: check your internet connection.";
+    else if(code.includes("auth")) msg="Could not send: customer sign-in failed.";
+    statusEl.textContent=msg;
   }
 };
 
@@ -170,7 +199,7 @@ const cars=[
   ["2023 Jeep Grand Cherokee","$34,995","grand-cherokee.jpg"]
 ];
 document.getElementById("cars").innerHTML=cars.map(c=>`<article class="vehicle-card">
-  <img class="vehicle-image" src="${c[2]}" alt="${c[0]}" loading="lazy">
+  <img class="vehicle-image" src="./${c[2]}" alt="${c[0]}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.classList.add('image-missing')">
   <div class="vehicle-info">
     <h3>${c[0]}</h3>
     <div class="vehicle-price">${c[1]}</div>
