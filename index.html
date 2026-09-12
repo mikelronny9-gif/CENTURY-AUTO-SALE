@@ -74,13 +74,6 @@ onAuthStateChanged(auth,u=>{
 });
 signInAnonymously(auth).catch(err=>console.error("Anonymous sign-in:",err));
 
-const cars=[
-  ["2023 Toyota RAV4","$28,995"],["2022 Honda Accord","$24,995"],
-  ["2023 Ford F-150","$36,995"],["2021 BMW 330i","$32,995"],
-  ["2022 Chevrolet Camaro","$27,995"],["2023 Jeep Grand Cherokee","$34,995"]
-];
-document.getElementById("cars").innerHTML=cars.map(c=>`<article><div class="photo">${c[0]}</div><h3>${c[0]}</h3><b>${c[1]}</b><br><button class="secondary" onclick="openRequest('${c[0]}')">Request to Chat</button></article>`).join("");
-
 const modal=document.getElementById("modal"), form=document.getElementById("form"), statusEl=document.getElementById("status");
 
 window.openRequest=(vehicle="")=>{
