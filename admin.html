@@ -111,7 +111,7 @@ async function refreshConversation(id){
   };
   document.getElementById("closeRequestBtn").onclick=async()=>{
     await updateDoc(doc(db,"chatRequests",id),{status:"closed",updatedAt:serverTimestamp()});
-    activeRequest=null;conversation.innerHTML="";renderRequests([...knownIds].map(()=>null).filter(Boolean));
+    activeRequest=null;conversation.innerHTML="";subscribeRequests();
   };
 }
 
